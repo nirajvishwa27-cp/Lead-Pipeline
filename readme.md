@@ -10,45 +10,28 @@ instead of the lead silently disappearing.
 
 
 
-Lead fills detail (form)
-        │
-        ▼
-MongoDB (Status: received)
-        │
-        ▼
-AI Scoring (Groq)
-        │
-        ▼
- ┌─────────────────────────┐
- │   Scoring Successful?   │
- └───────┬─────────┬───────┘
-         │         │
-        YES        NO
-         │         │
-         ▼         ▼
- Airtable CRM   Status: failed
- Status=synced        │
-         │            ▼
-         │     Retry every 5 min
-         │            │
-         │            ▼
-         │     Retry Count < 3 ?
-         │
-         │      YES       NO
-         │       │         │
-         │       ▼         ▼
-         │   Re-score   Dead Letter
-         │                 │
-         │                 ▼
-         │        Slack Alert
-         │      (Human Review)
-         │
-         ▼
-   Score >= 7 ?
-         │
-      YES│
-         ▼
- Slack Hot Lead Alert
+```mermaid
+flowchart TD
+    A[Customer fills form] --> B[MongoDB<br/>Status: received]
+    B --> C[AI Scoring - Groq]
+
+    C --> D{Scoring Successful?}
+
+    D -->|Yes| E[Airtable CRM<br/>Status: synced]
+    D -->|No| F[Status: failed]
+
+    F --> G[Retry every 5 min]
+    G --> H{Retry Count < 3 ?}
+
+    H -->|Yes| C
+    H -->|No| I[Dead Letter]
+
+    I --> J[Slack Alert<br/>Human Review]
+
+    E --> K{Score >= 7 ?}
+    K -->|Yes| L[Slack Hot Lead Alert]
+```
+
 
 
      
