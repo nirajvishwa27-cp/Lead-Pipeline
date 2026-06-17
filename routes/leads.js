@@ -1,14 +1,17 @@
 import express from "express";
 import Lead from "../models/Lead.js";
-import { checkGroqConnection, scoreLead } from "../services/scoringService.js";
-import { MAX_RETRIES, retryFailedLeads } from "../jobs/retryFailed.js";
-import { sendDeadLetterAlert } from "../services/slackService.js";
+import { scoreLead } from "../services/scoringService.js";
+import { retryFailedLeads } from "../jobs/retryFailed.js";
+import { syncToAirtable } from "../services/airtableService.js";
+import { sendHotLeadAlert } from "../services/slackService.js";
 
 const router = express.Router();
+
 
 router.post("/intake", async (req, res) => {
   try {
     const payload = req.body;
+
     if (!payload || Object.keys(payload).length === 0) {
       return res.status(400).json({ error: "Request body is empty." });
     }
@@ -29,7 +32,6 @@ router.post("/intake", async (req, res) => {
   }
 });
 
-
 router.post("/score/:id", async (req, res) => {
   try {
     const lead = await Lead.findById(req.params.id);
@@ -46,14 +48,34 @@ router.post("/score/:id", async (req, res) => {
       lead.summary = summary;
       await lead.save();
 
+      let airtableRecordId = null;
+      let hotLeadNotified = false;
+
+      try {
+        const airtableResult = await syncToAirtable(lead);
+        airtableRecordId = airtableResult.id;
+        lead.status = "synced";
+        await lead.save();
+console.log("DEBUG hot lead check:", lead.score, typeof lead.score, lead.score >= 7);
+        if (lead.score >= 7) {
+          await sendHotLeadAlert(lead);
+          hotLeadNotified = true;
+        }
+      } catch (crmErr) {
+  console.error(`Airtable sync failed for lead ${lead._id}:`, crmErr.message);
+}
+
       return res.status(200).json({
         message: "Lead scored successfully.",
         leadId: lead._id,
         status: lead.status,
         score: lead.score,
         summary: lead.summary,
+        airtableRecordId,
+        hotLeadNotified,
       });
     } catch (scoringErr) {
+      
       console.error(
         `Scoring failed for lead ${lead._id}:`,
         scoringErr.message
@@ -61,21 +83,10 @@ router.post("/score/:id", async (req, res) => {
 
       lead.status = "failed";
       lead.retryCount += 1;
-      if (lead.retryCount >= MAX_RETRIES) {
-        lead.status = "dead_letter";
-      }
       await lead.save();
 
-      if (lead.status === "dead_letter") {
-        await sendDeadLetterAlert(lead);
-      }
-
       return res.status(502).json({
-        message:
-          lead.status === "dead_letter"
-            ? "Scoring failed, lead moved to dead letter."
-            : "Scoring failed, lead marked for retry.",
-        error: scoringErr.message,
+        message: "Scoring failed, lead marked for retry.",
         leadId: lead._id,
         status: lead.status,
         retryCount: lead.retryCount,
@@ -87,21 +98,6 @@ router.post("/score/:id", async (req, res) => {
   }
 });
 
-router.get("/groq-health", async (req, res) => {
-  try {
-    const result = await checkGroqConnection();
-    return res.status(200).json({
-      message: "Groq connection ok.",
-      ...result,
-    });
-  } catch (err) {
-    console.error("Groq health check failed:", err.message);
-    return res.status(502).json({
-      message: "Groq connection failed.",
-      error: err.message,
-    });
-  }
-});
 
 router.post("/retry-now", async (req, res) => {
   try {

@@ -1,12 +1,11 @@
 import axios from "axios";
 
-
 export async function sendDeadLetterAlert(lead) {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
 
   if (!webhookUrl) {
     console.warn("SLACK_WEBHOOK_URL not set — skipping Slack alert.");
-    return;
+    return false;
   }
 
   const name = lead.rawPayload?.name || "Unknown";
@@ -16,7 +15,31 @@ export async function sendDeadLetterAlert(lead) {
 
   try {
     await axios.post(webhookUrl, { text });
+    return true;
   } catch (err) {
     console.error("Failed to send Slack alert:", err.message);
+    return false;
+  }
+}
+
+export async function sendHotLeadAlert(lead) {
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    console.warn("SLACK_WEBHOOK_URL not set — skipping Slack alert.");
+    return false;
+  }
+
+  const name = lead.rawPayload?.name || "Unknown";
+  const company = lead.rawPayload?.company || "Unknown";
+
+  const text = `🔥 *Hot lead scored ${lead.score}/10*\nName: ${name}\nCompany: ${company}\nSummary: ${lead.summary}`;
+
+  try {
+    await axios.post(webhookUrl, { text });
+    return true;
+  } catch (err) {
+    console.error("Failed to send Slack alert:", err.message);
+    return false;
   }
 }
