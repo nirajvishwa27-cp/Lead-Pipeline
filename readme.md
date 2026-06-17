@@ -10,7 +10,7 @@ instead of the lead silently disappearing.
 
 
 
-Customer fills form
+Lead fills detail (form)
         │
         ▼
 MongoDB (Status: received)
