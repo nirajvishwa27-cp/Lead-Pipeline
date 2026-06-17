@@ -98,107 +98,93 @@ lives in the Express API above — n8n orchestrates and visualizes it.
 
 
 ## Setup 
-Setup Instructions
-1. Clone the Repository
-git clone <your-repo-url>
+# Setup
+
+## 1. Clone Repository
+
+```bash
+git clone <repo-url>
 cd Lead-Pipeline
-2. Install Dependencies
+```
+
+## 2. Install Dependencies
+
+```bash
 npm install
-3. Create Environment Variables
+```
 
-Create a .env file in the project root:
+## 3. Create `.env`
 
+```env
 PORT=5001
 
-MONGO_URI=your_mongodb_atlas_connection_string
+MONGO_URI=your_mongodb_uri
 
 GROQ_API_KEY=your_groq_api_key
 
-AIRTABLE_API_KEY=your_airtable_personal_access_token
+AIRTABLE_API_KEY=your_airtable_token
 AIRTABLE_BASE_ID=your_airtable_base_id
 
 SLACK_WEBHOOK_URL=your_slack_webhook_url
-4. MongoDB Atlas Setup
-Create Cluster
-Create a free MongoDB Atlas cluster
-Create a database user
-Add your IP address to Network Access
-Copy the connection string
+```
 
-Example:
+## 4. Required Services
 
-MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/lead_pipeline
-5. Groq Setup
-Create API Key
-Sign up at https://console.groq.com
-Create an API key
-Add it to .env
+### MongoDB Atlas
 
-Example:
+* Create a free cluster
+* Create a database user
+* Add your IP to Network Access
+* Copy the connection string
 
-GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxx
-6. Airtable Setup
-Create CRM Base
+### Groq
 
-Create a base named:
+* Create an API key
+* Add it to `.env`
 
-CRM_Mock
+### Airtable
 
-Create a table named:
+Create a base named **CRM_Mock** with a table named **Leads**.
 
-Leads
+| Field   | Type             |
+| ------- | ---------------- |
+| Lead ID | Single Line Text |
+| Name    | Single Line Text |
+| Email   | Single Line Text |
+| Company | Single Line Text |
+| Message | Long Text        |
+| Score   | Number           |
+| Summary | Long Text        |
+| Status  | Single Select    |
 
-Required columns:
+Create a Personal Access Token with:
 
-Field	Type
-Lead ID	Single Line Text
-Name	Single Line Text
-Email	Single Line Text
-Company	Single Line Text
-Message	Long Text
-Score	Number
-Summary	Long Text
-Status	Single Select
-Create Personal Access Token
+* `data.records:read`
+* `data.records:write`
 
-Permissions:
+### Slack
 
-data.records:read
-data.records:write
+* Create an Incoming Webhook
+* Copy the webhook URL
+* Add it to `.env`
 
-Add to .env:
+## 5. Run Server
 
-AIRTABLE_API_KEY=pat_xxxxxxxxx
-AIRTABLE_BASE_ID=appxxxxxxxxx
-7. Slack Webhook Setup
-Create Incoming Webhook
-Open Slack Apps
-Install Incoming Webhooks
-Select a channel
-Copy the webhook URL
-
-Add to .env
-
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx/xxx/xxx
-8. Run the Server
-
-Development:
-
+```bash
 npm run dev
-
-Production:
-
-npm start
+```
 
 Expected output:
 
+```bash
 MongoDB connected
 Retry job scheduled (every 5 minutes)
 Server running on port 5001
-9. Test Lead Intake
+```
 
-Create a lead:
+## 6. Test Lead Intake
 
+```bash
 curl -X POST http://localhost:5001/api/leads/intake \
 -H "Content-Type: application/json" \
 -d '{
@@ -207,28 +193,15 @@ curl -X POST http://localhost:5001/api/leads/intake \
   "company":"TechVerse AI",
   "message":"Budget approved. Need AI automation within 30 days."
 }'
+```
 
-Response:
+## 7. Score Lead
 
-{
-  "message": "Lead captured successfully.",
-  "leadId": "...",
-  "status": "received"
-}
-10. Score the Lead
+```bash
 curl -X POST http://localhost:5001/api/leads/score/<LEAD_ID>
+```
 
-Expected response:
-
-{
-  "message": "Lead scored successfully.",
-  "status": "synced",
-  "score": 9,
-  "summary": "...",
-  "airtableRecordId": "...",
-  "hotLeadNotified": true
-}
-6. (Optional) Start n8n:
+## 8. Optional: Run n8n
 
 ```bash
 docker run -it --rm -p 5678:5678 n8nio/n8n
@@ -242,3 +215,5 @@ http://localhost:5678
 
 Import the provided workflow and start testing.
 
+```
+```
