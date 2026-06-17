@@ -8,6 +8,50 @@ alert. If the AI scoring call fails or times out, the lead is never lost —
 it's automatically retried, and if it keeps failing, a human gets notified
 instead of the lead silently disappearing.
 
+
+
+Customer fills form
+        │
+        ▼
+MongoDB (Status: received)
+        │
+        ▼
+AI Scoring (Groq)
+        │
+        ▼
+ ┌─────────────────────────┐
+ │   Scoring Successful?   │
+ └───────┬─────────┬───────┘
+         │         │
+        YES        NO
+         │         │
+         ▼         ▼
+ Airtable CRM   Status: failed
+ Status=synced        │
+         │            ▼
+         │     Retry every 5 min
+         │            │
+         │            ▼
+         │     Retry Count < 3 ?
+         │
+         │      YES       NO
+         │       │         │
+         │       ▼         ▼
+         │   Re-score   Dead Letter
+         │                 │
+         │                 ▼
+         │        Slack Alert
+         │      (Human Review)
+         │
+         ▼
+   Score >= 7 ?
+         │
+      YES│
+         ▼
+ Slack Hot Lead Alert
+
+
+     
 ## Stack
 
 - **n8n** — webhook entry point and visual workflow orchestration
