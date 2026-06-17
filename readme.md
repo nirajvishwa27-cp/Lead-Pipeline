@@ -92,3 +92,153 @@ The included n8n workflow (`n8n/lead-pipeline-workflow.json`) provides the
 public-facing webhook entry point and a visual representation of the
 success/failure routing. The actual scoring, retry, and escalation logic
 lives in the Express API above — n8n orchestrates and visualizes it.
+
+
+
+
+
+## Setup 
+Setup Instructions
+1. Clone the Repository
+git clone <your-repo-url>
+cd Lead-Pipeline
+2. Install Dependencies
+npm install
+3. Create Environment Variables
+
+Create a .env file in the project root:
+
+PORT=5001
+
+MONGO_URI=your_mongodb_atlas_connection_string
+
+GROQ_API_KEY=your_groq_api_key
+
+AIRTABLE_API_KEY=your_airtable_personal_access_token
+AIRTABLE_BASE_ID=your_airtable_base_id
+
+SLACK_WEBHOOK_URL=your_slack_webhook_url
+4. MongoDB Atlas Setup
+Create Cluster
+Create a free MongoDB Atlas cluster
+Create a database user
+Add your IP address to Network Access
+Copy the connection string
+
+Example:
+
+MONGO_URI=mongodb+srv://username:password@cluster.mongodb.net/lead_pipeline
+5. Groq Setup
+Create API Key
+Sign up at https://console.groq.com
+Create an API key
+Add it to .env
+
+Example:
+
+GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxx
+6. Airtable Setup
+Create CRM Base
+
+Create a base named:
+
+CRM_Mock
+
+Create a table named:
+
+Leads
+
+Required columns:
+
+Field	Type
+Lead ID	Single Line Text
+Name	Single Line Text
+Email	Single Line Text
+Company	Single Line Text
+Message	Long Text
+Score	Number
+Summary	Long Text
+Status	Single Select
+Create Personal Access Token
+
+Permissions:
+
+data.records:read
+data.records:write
+
+Add to .env:
+
+AIRTABLE_API_KEY=pat_xxxxxxxxx
+AIRTABLE_BASE_ID=appxxxxxxxxx
+7. Slack Webhook Setup
+Create Incoming Webhook
+Open Slack Apps
+Install Incoming Webhooks
+Select a channel
+Copy the webhook URL
+
+Add to .env
+
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx/xxx/xxx
+8. Run the Server
+
+Development:
+
+npm run dev
+
+Production:
+
+npm start
+
+Expected output:
+
+MongoDB connected
+Retry job scheduled (every 5 minutes)
+Server running on port 5001
+9. Test Lead Intake
+
+Create a lead:
+
+curl -X POST http://localhost:5001/api/leads/intake \
+-H "Content-Type: application/json" \
+-d '{
+  "name":"Aarav Mehta",
+  "email":"aarav@techverse.ai",
+  "company":"TechVerse AI",
+  "message":"Budget approved. Need AI automation within 30 days."
+}'
+
+Response:
+
+{
+  "message": "Lead captured successfully.",
+  "leadId": "...",
+  "status": "received"
+}
+10. Score the Lead
+curl -X POST http://localhost:5001/api/leads/score/<LEAD_ID>
+
+Expected response:
+
+{
+  "message": "Lead scored successfully.",
+  "status": "synced",
+  "score": 9,
+  "summary": "...",
+  "airtableRecordId": "...",
+  "hotLeadNotified": true
+}
+6. (Optional) Start n8n:
+
+```bash
+docker run -it --rm -p 5678:5678 n8nio/n8n
+```
+
+Open:
+
+```text
+http://localhost:5678
+```
+
+Import the provided workflow and start testing.
+
